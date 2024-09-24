@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Location {
+  id        Int       @id @default(autoincrement())
+  city      String
+  users     User[]    // Relation avec les utilisateurs
+  announces Announce[] // Relation avec les annonces
+}
+
+model Sport {
+  id        Int       @id @default(autoincrement())
+  title     String
+  imageUrl  String
+  users     User[]    // Relation avec les utilisateurs
+  announces Announce[] // Relation avec les annonces
+}
+
+model User {
+  id              Int         @id @default(autoincrement())
+  fullName        String
+  email           String      @unique
+  password        String
+  picture         String   
+  bio             String      @default("")   
+  dateRegistered  DateTime    @default(now())
+  birthDate        DateTime     // Ajout de la date de naissance
+  announces       Announce[]
+  sentMessages    Message[]   @relation("Sender")
+  receivedMessages Message[]  @relation("Receiver")
+  responses       Response[]
+  sentFriendships Friendship[] @relation("user1")
+  receivedFriendships Friendship[] @relation("user2")
+  location        Location    @relation(fields: [locationId], references: [id])
+  locationId      Int         // Lien vers la ville (Location)
+  sport           Sport       @relation(fields: [sportId], references: [id])
+  sportId         Int         // Lien vers un sport
+}
+
+model Announce {
+  id              Int         @id @default(autoincrement())
+  title           String
+  description     String
+  datePosted      DateTime    @default(now())
+  deadline        DateTime    // I just added this proprriete
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+  responses       Response[]
+  location        Location    @relation(fields: [locationId], references: [id])
+  locationId      Int         // Lien vers la ville (Location)
+  sport           Sport       @relation(fields: [sportId], references: [id])
+  sportId         Int         // Lien vers un sport
+}
+
+model Message {
+  id              Int         @id @default(autoincrement())
+  content         String
+  dateSent        DateTime    @default(now())
+  sender          User        @relation("Sender", fields: [senderId], references: [id])
+  senderId        Int
+  receiver        User        @relation("Receiver", fields: [receiverId], references: [id])
+  seen            Boolean     @default(false)
+  receiverId      Int
+}
+
+model Friendship {
+  id              Int         @id @default(autoincrement())
+  status          String      @default("PENDING")
+  user1           User        @relation("user1", fields: [user1Id], references: [id])  // sender
+  user1Id         Int
+  user2           User        @relation("user2", fields: [user2Id], references: [id])  // receiver
+  user2Id         Int
+  dateAdded       DateTime    @default(now())
+
+  @@unique([user1Id, user2Id])
+}
+
+model Response {
+  content         String      
+  dateResponded   DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          Int
+  announce        Announce    @relation(fields: [announceId], references: [id])
+  announceId      Int
+  @@id([userId, announceId])
+}
